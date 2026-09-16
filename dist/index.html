@@ -1835,11 +1835,7 @@ function drawNPC(n, ox, oy) {
   drawShadow(px, py + 9, 8);
   const bob = Math.sin(tGlobal * 1.6 + n.x) > 0.7 ? 1 : 0;
   CX.drawImage(humanSprite(npcPal(n.p), 'down', bob, 2), px - 16, py - 24);
-  if (n.shop) { CX.fillStyle = '#f0c04a'; CX.font = '10px monospace'; CX.fillText('
-</script>
-</body>
-</html>
-, px - 2, py - 28); }
+  if (n.shop) { CX.fillStyle = '#f0c04a'; CX.font = '10px monospace'; CX.fillText('$', px - 2, py - 28); }
 }
 function drawBossMarker(b, ox, oy) {
   const px = b.x * TS + TS / 2 - ox, py = b.y * TS + TS / 2 - oy;
