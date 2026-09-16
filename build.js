@@ -14,13 +14,7 @@ fs.writeFileSync(path.join(SRC, 'bundle.js'), bundle);
 const shell = fs.readFileSync(path.join(SRC, 'shell.html'), 'utf8');
 if (!shell.includes('/*__GAME__*/')) { console.error('shell.html no contiene el marcador /*__GAME__*/'); process.exit(1); }
 
-// OJO: el segundo argumento de String.replace() NO puede ser la cadena del
-// bundle directamente. Si es un string, JS interpreta $&, $`, $', $1... como
-// patrones especiales de sustitucion, y el bundle contiene '$' literales
-// (p.ej. el icono de tienda) que disparaban ese comportamiento y truncaban
-// el script. Usar una funcion de reemplazo evita esa interpretacion.
-const safeBundle = bundle.replace(/<\/script/gi, '<\\/script');
-const html = shell.replace('/*__GAME__*/', () => safeBundle);
+const html = shell.replace('/*__GAME__*/', bundle.replace(/<\/script>/g, '<\\/script>'));
 fs.mkdirSync(DIST, { recursive: true });
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
 
