@@ -1,0 +1,14 @@
+{
+  "name": "fuera-de-la-oficina",
+  "version": "1.0.0",
+  "description": "RPG por turnos sobre dejar la vida de oficina. Motor propio en Canvas 2D, sin dependencias.",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js && node tools/serve.js",
+    "start": "node tools/serve.js",
+    "test": "node test/test.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
