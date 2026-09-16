@@ -1,4 +1,7 @@
-# FUERA DE LA OFICINA
+# Fuera de la Oficina — Visual Upgrade v2
+
+> RPG táctico pixel-art 2.5D sobre abandonar la vida empresarial y descubrir qué hacer después.
+
 
 RPG por turnos sobre qué hacer con el resto del día cuando dejas la vida de oficina.
 
@@ -223,3 +226,8 @@ SICE aparece como organización **ficticia**. La historia es una obra de ficció
 ## Licencia
 
 MIT. Todo el arte es procedural y todo el audio está sintetizado en tiempo real: no hay activos de terceros en el proyecto.
+
+
+## Upgrade visual
+
+La versión actual incorpora `src/08-visual-upgrade.js`, con una capa de render pixel-art 2.5D para mundo, personajes, enemigos, jefes y combate. Consulta `VISUAL_UPGRADE.md` para el detalle.
