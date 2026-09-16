@@ -83,6 +83,68 @@ const Audio_ = {
   }
 };
 
+/* ---------- 2b. "JUGOSIDAD": CÁMARA, DESTELLOS Y PARTÍCULAS ---------- */
+/* Sistema pequeño y generico reutilizado por el mundo y el combate para dar
+   sensacion de impacto: sacudida de camara, destello de pantalla y una
+   piscina de particulas vectoriales (nada de imagenes, todo dibujado). */
+const Shake = { x: 0, y: 0, t: 0, mag: 0 };
+function shake(mag, dur) { Shake.mag = Math.max(Shake.mag * (Shake.t > 0 ? Shake.t / 0.4 : 0), mag); Shake.t = Math.max(Shake.t, dur); }
+function updateShake(dt) {
+  if (Shake.t > 0) {
+    Shake.t -= dt;
+    const f = clamp(Shake.t / 0.4, 0, 1);
+    Shake.x = (Math.random() * 2 - 1) * Shake.mag * f;
+    Shake.y = (Math.random() * 2 - 1) * Shake.mag * f;
+  } else { Shake.x = 0; Shake.y = 0; Shake.mag = 0; }
+}
+const Flash = { t: 0, max: 1, col: '#fff' };
+function flash(col, dur) { Flash.col = col; Flash.t = dur; Flash.max = dur; }
+
+const FXP = [];
+function spawnFX(x, y, opts) {
+  FXP.push(Object.assign({ x, y, vx: 0, vy: 0, life: 0.5, age: 0, size: 3, color: '#fff', shape: 'dot', rot: 0, vr: 0, grav: 0, delay: 0 }, opts));
+  if (FXP.length > 260) FXP.splice(0, FXP.length - 260);
+}
+function updateFX(dt) {
+  for (let i = FXP.length - 1; i >= 0; i--) {
+    const p = FXP[i];
+    if (p.delay > 0) { p.delay -= dt; continue; }
+    p.age += dt;
+    if (p.age >= p.life) { FXP.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vy += (p.grav || 0) * dt;
+    p.rot += (p.vr || 0) * dt;
+  }
+}
+function drawStarShape(ctx, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+    const x1 = Math.cos(a) * r, y1 = Math.sin(a) * r;
+    i ? ctx.lineTo(x1, y1) : ctx.moveTo(x1, y1);
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a2) * r * 0.45, Math.sin(a2) * r * 0.45);
+  }
+  ctx.closePath();
+}
+function drawFX(ctx) {
+  FXP.forEach(p => {
+    if (p.delay > 0) return;
+    const t = clamp(p.age / p.life, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - t);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color; ctx.strokeStyle = p.color;
+    if (p.shape === 'dot') { ctx.beginPath(); ctx.arc(0, 0, Math.max(0.3, p.size * (1 - t * 0.3)), 0, 7); ctx.fill(); }
+    else if (p.shape === 'slash') { ctx.lineWidth = p.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-11, 5); ctx.quadraticCurveTo(0, -p.size * 2.2, 11, -5); ctx.stroke(); }
+    else if (p.shape === 'ring') { ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, p.size * (0.25 + t * 1.5), 0, 7); ctx.stroke(); }
+    else if (p.shape === 'spark') { ctx.fillRect(-p.size / 2, -1, p.size, 2); }
+    else if (p.shape === 'star') { drawStarShape(ctx, p.size * (1 - t * 0.4)); ctx.fill(); }
+    ctx.restore();
+  });
+}
+
 /* ---------- 3. SPRITES PIXEL-ART PROCEDURALES ---------- */
 const PX = 1; // pixel unit inside sprite canvases
 
@@ -294,8 +356,45 @@ const BOSS_GRIDS = {
   ]
 };
 
+/* Accesorios cosmeticos: pequenos parches de color estampados sobre la
+   silueta humanoide compartida para que cada heroe se reconozca de un
+   vistazo (antes todos usaban exactamente la misma forma). Coordenadas en
+   celdas de la rejilla de 16 de ancho, antes de escalar. */
+const ACCESSORY = {
+  alex: {
+    down: [[6, 8, '#e0763a'], [7, 8, '#e0763a'], [8, 8, '#e0763a'], [9, 8, '#c05a28']],
+    left: [[6, 8, '#e0763a'], [7, 8, '#e0763a'], [8, 8, '#c05a28']],
+    up: [[6, 8, '#c05a28'], [7, 8, '#c05a28'], [8, 8, '#c05a28'], [9, 8, '#c05a28']]
+  },
+  marta: {
+    down: [[5, 4, '#20202a'], [6, 4, '#20202a'], [9, 4, '#20202a'], [10, 4, '#20202a']],
+    left: [[5, 4, '#20202a'], [6, 4, '#20202a']],
+    up: []
+  },
+  dani: {
+    down: [[4, 1, '#274a6a'], [5, 1, '#274a6a'], [6, 1, '#274a6a'], [7, 1, '#274a6a'], [8, 1, '#274a6a'], [9, 1, '#274a6a'], [10, 1, '#274a6a'], [11, 1, '#274a6a'], [3, 2, '#1c3a54'], [12, 2, '#1c3a54']],
+    left: [[4, 1, '#274a6a'], [5, 1, '#274a6a'], [6, 1, '#274a6a'], [7, 1, '#274a6a'], [8, 1, '#274a6a'], [3, 2, '#1c3a54']],
+    up: [[4, 1, '#1c3a54'], [5, 1, '#1c3a54'], [6, 1, '#1c3a54'], [7, 1, '#1c3a54'], [8, 1, '#1c3a54'], [9, 1, '#1c3a54'], [10, 1, '#1c3a54'], [11, 1, '#1c3a54']]
+  },
+  lucia: {
+    down: [[12, 2, '#c2913c'], [13, 3, '#c2913c'], [12, 4, '#a97b30']],
+    left: [[12, 2, '#c2913c'], [13, 3, '#c2913c'], [12, 4, '#a97b30']],
+    up: [[7, 2, '#a97b30'], [8, 2, '#a97b30'], [7, 7, '#a97b30'], [8, 7, '#a97b30']]
+  },
+  jorge: {
+    down: [[5, 7, '#4a4038'], [6, 7, '#4a4038'], [7, 7, '#4a4038'], [8, 7, '#4a4038'], [9, 7, '#4a4038'], [10, 7, '#4a4038'], [6, 8, '#4a4038'], [9, 8, '#4a4038']],
+    left: [[5, 7, '#4a4038'], [6, 7, '#4a4038'], [7, 7, '#4a4038'], [8, 7, '#4a4038'], [9, 7, '#4a4038'], [7, 8, '#4a4038']],
+    up: []
+  }
+};
+function stampAccessory(ctx, id, dirKey, scale) {
+  const set = ACCESSORY[id]; if (!set) return;
+  const list = set[dirKey] || [];
+  list.forEach(([cx, cy, col]) => { ctx.fillStyle = col; ctx.fillRect(cx * scale, cy * scale, scale, scale); });
+}
+
 const _sprCache = new Map();
-function renderGrid(grid, pal, scale) {
+function renderGrid(grid, pal, scale, eyeOverride) {
   const w = grid[0].length, h = grid.length;
   const c = document.createElement('canvas');
   c.width = w * scale; c.height = h * scale;
@@ -305,7 +404,7 @@ function renderGrid(grid, pal, scale) {
     for (let i = 0; i < w; i++) {
       const ch = row[i];
       if (ch === '.' || ch === undefined) continue;
-      const col = pal[ch];
+      const col = (eyeOverride && ch === 'E') ? eyeOverride : pal[ch];
       if (!col) continue;
       x.fillStyle = col;
       x.fillRect(i * scale, y * scale, scale, scale);
@@ -315,6 +414,23 @@ function renderGrid(grid, pal, scale) {
 }
 function spriteKey() { return Array.prototype.join.call(arguments, '|'); }
 
+/* Variante "destello": la misma silueta rellena de blanco solido, usada un
+   par de fotogramas al recibir un golpe para que el impacto se lea de
+   verdad en vez de solo parpadear la transparencia. */
+const _flashCache = new WeakMap();
+function flashVariant(cv) {
+  if (_flashCache.has(cv)) return _flashCache.get(cv);
+  const c = document.createElement('canvas');
+  c.width = cv.width; c.height = cv.height;
+  const x = c.getContext('2d');
+  x.drawImage(cv, 0, 0);
+  x.globalCompositeOperation = 'source-in';
+  x.fillStyle = '#ffffff';
+  x.fillRect(0, 0, c.width, c.height);
+  _flashCache.set(cv, c);
+  return c;
+}
+
 /** Sprite humanoide: dir(down/up/left/right), frame 0..2 */
 function humanSprite(pal, dir, frame, scale) {
   const key = spriteKey('h', pal.key, dir, frame, scale);
@@ -322,6 +438,9 @@ function humanSprite(pal, dir, frame, scale) {
   const base = dir === 'up' ? H_TORSO.up : (dir === 'down' ? H_TORSO.down : H_TORSO.side);
   const grid = base.concat(H_LEGS[frame % 3]);
   let cv = renderGrid(grid, pal, scale);
+  const accDir = dir === 'right' ? 'left' : dir;
+  const actx = cv.getContext('2d');
+  stampAccessory(actx, pal.key, accDir, scale);
   if (dir === 'right') {
     const m = document.createElement('canvas');
     m.width = cv.width; m.height = cv.height;
@@ -332,11 +451,12 @@ function humanSprite(pal, dir, frame, scale) {
   _sprCache.set(key, cv);
   return cv;
 }
-function creatureSprite(gridName, pal, scale) {
-  const key = spriteKey('c', gridName, pal.key, scale);
+/** Sprite de criatura. blink=true cierra el ojo (parpadeo periodico). */
+function creatureSprite(gridName, pal, scale, blink) {
+  const key = spriteKey('c', gridName, pal.key, scale, blink ? 'b' : 'o');
   if (_sprCache.has(key)) return _sprCache.get(key);
   const grid = GRIDS[gridName] || BOSS_GRIDS[gridName] || GRIDS.fantasma;
-  const cv = renderGrid(grid, pal, scale);
+  const cv = renderGrid(grid, pal, scale, blink ? (pal.B || pal.b || pal.A) : null);
   _sprCache.set(key, cv);
   return cv;
 }
